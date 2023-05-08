@@ -92,4 +92,61 @@ async def get_powermode():
 # para obtener la medición análoga actual. Puede ser simulada con un potenciómetro
 @anvil.pico.callable(is_async=True)
 async def get_luz():
+    if modo:
+        luz = luz_pin.read_u16()  # da valores entre 0 y 65025
+    else:
+        luz = randint(3000,5000)  # simula los bajos valores de luz que hay en la noche
     
+    # retornamos el valor para ser graficado en plot_luz
+    return luz 
+
+
+# dependiendo de la luz, dice qué tan abierta estará la cortina (porcentaje). 5 modos
+@anvil.pico.callable(is_async=True)
+async def get_cortina(luz):
+    global cortina
+    
+    # si el sistema está apagado, no hay cambios en la cortina
+    if powermode:
+        
+        # lo dividimos en 5 rangos de luz, a cada uno le corresponde un nivel de apertura para la cortina
+        # a mayor luz, menor apertura
+        if modo:
+            if 50000 < luz:
+                cortina = 0
+            elif 40000 <= luz and luz < 50000:
+                cortina = 20
+            elif 30000 <= luz and luz < 40000:
+                cortina = 40
+            elif 20000 <= luz and luz < 30000:
+                cortina = 60
+            elif 10000 <= luz and luz < 20000:
+                cortina = 80
+            elif 0 <= luz and luz < 10000:
+                cortina = 100
+                
+        # pero en la noche, la cortina se cierra por privacidad        
+        else:
+            cortina = 0    
+    
+    # retornamos el valor para ser graficado en plot_cortina
+    return cortina     
+
+    
+
+
+# se conecta a nuestro proyecto en anvilworks
+anvil.pico.connect(UPLINK_KEY)
+
+
+'''
+    _                ___       _.--.    ----------- REQUERIMIENTOS: --------------
+    \`.|\..----...-'`   `-._.-'_.-'`             Proyecto en AnvilWorks
+    /  ' `         ,       _.-'                  Raspberry Pi Pico W
+    )/' _/     \   `-_,   /                      Potenciómetro
+    `-'" `"\_  ,_.-;_.-\_ ',                     2 LEDs
+        _.-'_./   {_.'   ; /             
+       {_.-``-'         {_/       
+                                 
+'''
+
