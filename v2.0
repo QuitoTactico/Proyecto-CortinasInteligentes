@@ -21,8 +21,9 @@ UPLINK_KEY = "server_V6XYAKDSY2BV6XTRE7MOXHGF-M33JCTKEAWVOBO7S"
 led = Pin("LED", Pin.OUT, value=1)
 
 #salidas digitales
-dia   = Pin(17, Pin.OUT, value=1)
-noche = Pin(16, Pin.OUT, value=0)
+dia      = Pin(17, Pin.OUT, value=1)
+noche	 = Pin(16, Pin.OUT, value=0)
+toma_led = Pin(18, Pin.OUT, value=1)
 
 #entradas digitales (entran desde anvilworks
 modo      = True # True = Dia       | False = Noche
@@ -87,8 +88,13 @@ async def toma_notoma():
     global toma_datos
     toma_datos = not toma_datos
     
+    if toma_datos:
+        toma_led.value(1)
+    else:
+        toma_led.value(0)
+    
     # retorna el cambio que se ha hecho, para ser impreso en la consola de anvilworks
-    return "Ahora la cortina tomará datos de luz" if powermode else "Ahora la cortina NO tomará datos de luz"
+    return "Ahora la cortina tomará datos de luz" if toma_datos else "Ahora la cortina NO tomará datos de luz"
 
 # para obtener el valor actual del modo(Día/Noche)
 @anvil.pico.callable(is_async=True)
