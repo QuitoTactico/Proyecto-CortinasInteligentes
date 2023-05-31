@@ -1,11 +1,13 @@
 '''
- [PARCIAL - CORTINAS INTELIGENTES]
+ [PARCIAL - CORTINAS INTELIGENTES v2.0]
   
 hecho por:    Esteban Vergara Giraldo
               Jonathan Betancur Espinosa
              
 manual de
 fabricación:  https://docs.google.com/document/d/1S8KZpc69cQ6S1qoQciOljn6loe1zCqPxLhJy1a0WGjw/
+
+link anvil:   https://cortinas-inteligentes.anvil.app/
 
 '''
 import anvil.pico
@@ -25,6 +27,7 @@ noche = Pin(16, Pin.OUT, value=0)
 #entradas digitales (entran desde anvilworks
 modo      = True # True = Dia       | False = Noche
 powermode = True # True = Encendido | False = Apagado
+toma_datos= True # True = Toma datos de luz | False = No toma datos de luz
 
 #entrada análoga
 luz_pin = ADC(28)
@@ -78,6 +81,15 @@ async def encendido_apagado():
     return "La cortina automática ha sido encendida" if powermode else "La cortina automática ha sido apagada"
 
 
+# enciende y apaga el sistema de cortinas automáticas, aunque los datos se siguen tomando.
+@anvil.pico.callable(is_async=True)
+async def toma_notoma():
+    global toma_datos
+    toma_datos = not toma_datos
+    
+    # retorna el cambio que se ha hecho, para ser impreso en la consola de anvilworks
+    return "Ahora la cortina tomará datos de luz" if powermode else "Ahora la cortina NO tomará datos de luz"
+
 # para obtener el valor actual del modo(Día/Noche)
 @anvil.pico.callable(is_async=True)
 async def get_modo():
@@ -88,17 +100,24 @@ async def get_modo():
 async def get_powermode():
     return "Encendida" if powermode else "Apagada"  # es mostrado por powermode_label
     
+# para obtener el valor actual del powermode(Encendido/Apagado)
+@anvil.pico.callable(is_async=True)
+async def get_toma():
+    return "Toma datos" if toma_datos else "No toma datos"  # es mostrado por powermode_label    
 
 # para obtener la medición análoga actual. Puede ser simulada con un potenciómetro
 @anvil.pico.callable(is_async=True)
 async def get_luz():
-    if modo:
-        luz = luz_pin.read_u16()  # da valores entre 0 y 65025
+    if toma_datos:
+        if modo:
+            luz = luz_pin.read_u16()  # da valores entre 0 y 65025
+        else:
+            luz = randint(3000,5000)  # simula los bajos valores de luz que hay en la noche
+            
+        # retornamos el valor para ser graficado en plot_luz
+        return luz
     else:
-        luz = randint(3000,5000)  # simula los bajos valores de luz que hay en la noche
-    
-    # retornamos el valor para ser graficado en plot_luz
-    return luz 
+        return None
 
 
 # dependiendo de la luz, dice qué tan abierta estará la cortina (porcentaje). 5 modos
@@ -106,12 +125,13 @@ async def get_luz():
 async def get_cortina(luz):
     global cortina
     
-    # si el sistema está apagado, no hay cambios en la cortina
-    if powermode:
+    # si el sistema está apagado, no hay cambios en la cortina.
+    # lo mismo si se dejaron de tomar datos de luz
+    if powermode and toma_datos:
         
         # lo dividimos en 5 rangos de luz, a cada uno le corresponde un nivel de apertura para la cortina
         # a mayor luz, menor apertura
-        if modo:
+        if modo:  #es de día
             if 50000 < luz:
                 cortina = 0
             elif 40000 <= luz and luz < 50000:
@@ -133,6 +153,26 @@ async def get_cortina(luz):
     return cortina     
 
     
+# una versión simplificada de get_cortina. Debían ser dos funciones diferentes, o el return se confundiría
+@anvil.pico.callable(is_async=True)
+async def conversor(luz_conversor):
+    cortina_conversor = 0   # una variable diferente a la global
+    
+    if 50000 < luz_conversor:
+        cortina_conversor = 0
+    elif 40000 <= luz_conversor and luz_conversor < 50000:
+        cortina_conversor = 20
+    elif 30000 <= luz_conversor and luz_conversor < 40000:
+        cortina_conversor = 40
+    elif 20000 <= luz_conversor and luz_conversor < 30000:
+        cortina_conversor = 60
+    elif 10000 <= luz_conversor and luz_conversor < 20000:
+        cortina_conversor = 80
+    elif 0 <= luz_conversor and luz_conversor < 10000:
+        cortina_conversor = 100
+        
+    return cortina_conversor
+
 
 
 # se conecta a nuestro proyecto en anvilworks
