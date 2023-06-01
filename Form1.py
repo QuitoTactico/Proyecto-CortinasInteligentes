@@ -23,18 +23,21 @@ class Form1(Form1Template):
   def dia_noche(self, **event_args):
     anvil.server.call("titilar")
     modo = anvil.server.call("dia_noche")
+    self.consola_output.text = modo
     print(modo)
 
   #Se ejecuta cuando se presiona el botón [Cortina]
   def encendido_apagado(self, **event_args):
     anvil.server.call("titilar")
     powermode = anvil.server.call("encendido_apagado")
+    self.consola_output.text = powermode
     print(powermode)
 
   #Se ejecuta cuando se presiona el botón [Sensor]
   def toma_notoma(self, **event_args):
     anvil.server.call("titilar")
     toma = anvil.server.call("toma_notoma")
+    self.consola_output.text = toma
     print(toma)
      
   #Esta función es llamada cada segundo
@@ -81,7 +84,7 @@ class Form1(Form1Template):
 
     self.plot_cortina.data = go.Scatter( x=list(timestamps) , y=list(cortina_values))
     self.plot_cortina.layout.title = "Apertura de cortina (%)" 
-
+    
     
   # se ejecuta automáticamente cada que cambia el contenido del input en el conversor,
   # o si se presiona enter
